@@ -22,59 +22,60 @@ void Setup() {
     fruitX = rand() % width;
     fruitY = rand() % height;
     score = 0;
+    snake.clear();
     snake.push_back(make_pair(x, y));
+    snake.push_back(make_pair(x, y + 1));
 }
 
 void Draw() {
     system("cls");
-    for (int i = 0; i < width + 2; i++)
-        cout << "#";
+    for (int i = 0; i < width + 2; i++) cout << "#";
     cout << endl;
-
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            if (j == 0)
-                cout << "#";
-            if (i == y && j == x)
-                cout << "@";
-            else if (i == fruitY && j == fruitX)
-                cout << "O";
-            else {
-                bool print = false;
-                for (size_t k = 0; k < snake.size(); k++) {
-                    if (snake[k].first == j && snake[k].second == i) {
+            if (j == 0) cout << "#";
+            bool printed = false;
+            for (size_t k = 0; k < snake.size(); k++) {
+                if (snake[k].first == j && snake[k].second == i) {
+                    if (k < 2) {
+                        cout << "@";
+                    } else {
                         cout << "o";
-                        print = true;
                     }
+                    printed = true;
+                    break;
                 }
-                if (!print) cout << " ";
             }
-            if (j == width - 1)
-                cout << "#";
+            if (!printed) {
+                if (fruitX == j && fruitY == i)
+                    cout << "O";
+                else
+                    cout << " ";
+            }
+
+            if (j == width - 1) cout << "#";
         }
         cout << endl;
     }
-
-    for (int i = 0; i < width + 2; i++)
-        cout << "#";
-    cout << endl << endl;
-    cout << "Score:" << score << endl;
+    for (int i = 0; i < width + 2; i++) cout << "#";
+    cout << endl;
+    cout << "Score: " << score << endl;
 }
 
 void Input() {
     if (_kbhit()) {
         switch (_getch()) {
         case 'a':
-            dir = LEFT;
+            if (dir != RIGHT) dir = LEFT;
             break;
         case 'd':
-            dir = RIGHT;
+            if (dir != LEFT) dir = RIGHT;
             break;
         case 'w':
-            dir = UP;
+            if (dir != DOWN) dir = UP;
             break;
         case 's':
-            dir = DOWN;
+            if (dir != UP) dir = DOWN;
             break;
         case 'x':
             gameOver = true;
@@ -84,21 +85,7 @@ void Input() {
 }
 
 void Logic() {
-    int prevX = snake[0].first;
-    int prevY = snake[0].second;
-    int prev2X, prev2Y;
-    snake[0].first = x;
-    snake[0].second = y;
-
-    for (size_t i = 1; i < snake.size(); i++) {
-        prev2X = snake[i].first;
-        prev2Y = snake[i].second;
-        snake[i].first = prevX;
-        snake[i].second = prevY;
-        prevX = prev2X;
-        prevY = prev2Y;
-    }
-
+    vector<pair<int, int>> prev = snake;
     switch (dir) {
     case LEFT:
         x--;
@@ -116,20 +103,34 @@ void Logic() {
         break;
     }
 
-    if (x >= width) x = 0; else if (x < 0) x = width - 1;
-    if (y >= height) y = 0; else if (y < 0) y = height - 1;
-
-    for (size_t i = 1; i < snake.size(); i++) {
-        if (snake[i].first == x && snake[i].second == y) {
-            gameOver = true;
-        }
+    if (x >= width) x = 0;
+    else if (x < 0) x = width - 1;
+    if (y >= height) y = 0;
+    else if (y < 0) y = height - 1;
+    snake[0] = make_pair(x, y);
+    if (dir == RIGHT || dir == LEFT) {
+        snake[1] = make_pair(x, y + 1);
+    } else if (dir == UP || dir == DOWN) {
+        snake[1] = make_pair(x - 1, y);
     }
 
-    if (x == fruitX && y == fruitY) {
-        score += 1;
+    if ((x == fruitX && y == fruitY) ||
+        (snake[1].first == fruitX && snake[1].second == fruitY)) {
+        score++;
         fruitX = rand() % width;
         fruitY = rand() % height;
         snake.push_back(make_pair(-1, -1));
+        snake.push_back(make_pair(-1, -1));
+    }
+
+    for (size_t i = 2; i < snake.size(); i++) {
+        snake[i] = prev[i - 2];
+    }
+
+    for (size_t i = 2; i < snake.size(); i++) {
+        if ((snake[i] == snake[0] || snake[i] == snake[1]) && prev[i] != snake[0] && prev[i] != snake[1]) {
+            gameOver = true;
+        }
     }
 }
 
