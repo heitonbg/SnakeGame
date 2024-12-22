@@ -1,105 +1,92 @@
 #include <iostream>
 #include <conio.h>
-#include <windows.h> //слип
+#include <windows.h>
 #include <vector>
 #include <cstdlib>
 
 using namespace std;
 
-bool gameOver; //логическая переменная(показывает завершена ли игра)
-const int width = 15; //ширина поля
-const int height = 15; //высота поля
-int x, y, fruitX, fruitY, score;//переменные для хранения данных
-vector<pair<int, int>> snake; //хранение координат всех сегментов нашей анаконды
-enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };//перечисление направлений змеи
-eDirection dir; //переменная, хранящая текущее направление
+bool gameOver;
+const int width = 15;
+const int height = 15;
+int x, y, fruitX, fruitY, score;
+vector<pair<int, int>> snake;
+enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };
+eDirection dir;
 
-void Setup() {//загрузочные настройки игры
-    gameOver = false; //false - игра окончена, true - не окончена
+void Setup() {
+    gameOver = false;
     dir = STOP;
-    x = width / 2; // установление змейки по центру поля
-    y = height / 2; // установление змейки по центру поля
-    fruitX = rand() % width; //генерация рандомных значений X для фрукта в пределах поля
-    fruitY = rand() % height; //генерация рандомных значений Y для фрукта в пределах поля
-    score = 0; //начальный счет игрока
-    snake.push_back(make_pair(x, y)); //добавляют начальную позицию головы в вектор снейк
+    x = width / 2;
+    y = height / 2;
+    fruitX = rand() % width;
+    fruitY = rand() % height;
+    score = 0;
+    snake.clear();
+    snake.push_back(make_pair(x, y));
+    snake.push_back(make_pair(x, y + 1));
 }
 
-void Draw() {//функция отрисовки поля
-    system("cls"); //очищение консоли для обновления экрана
-    for (int i = 0; i < width + 2; i++)
-        cout << "#"; //рисование верхней границы поля
+void Draw() {
+    system("cls");
+    for (int i = 0; i < width + 2; i++) cout << "#";
     cout << endl;
-
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            if (j == 0)
-                cout << "#";//отрисовка поля по левому боку
-            if (i == y && j == x)
-                cout << "@";//если текущие координаты совпадают с  координатами игрока - выводится голова змеи @
-            else if (i == fruitY && j == fruitX)
-                cout << "O"; //координаты совпадают с координатами фрукта - отрисовка фрукта O
-            else {
-                bool print = false; //переменная печати тела
-                for (size_t k = 0; k < snake.size(); k++) {
-                    if (snake[k].first == j && snake[k].second == i) {
+            if (j == 0) cout << "#";
+            bool printed = false;
+            for (size_t k = 0; k < snake.size(); k++) {
+                if (snake[k].first == j && snake[k].second == i) {
+                    if (k < 2) {
+                        cout << "@";
+                    } else {
                         cout << "o";
-                        print = true;
-                    }//если текущие координаты совпадают с одной из координат тела змейки, выводится символ o, и print устанавливается в true.
+                    }
+                    printed = true;
+                    break;
                 }
-                if (!print) cout << " ";//если ничего не напечатано - пробел, т.е заполнение поля пустотой
             }
-            if (j == width - 1)
-                cout << "#";//рисование правой границы поля
+            if (!printed) {
+                if (fruitX == j && fruitY == i)
+                    cout << "O";
+                else
+                    cout << " ";
+            }
+
+            if (j == width - 1) cout << "#";
         }
         cout << endl;
     }
-
-    for (int i = 0; i < width + 2; i++)
-        cout << "#";//нижняя часть поля
-    cout << endl << endl;// пробел после игрового поля
-    cout << "Score:" << score << endl;//выведение актуального счета игрока
+    for (int i = 0; i < width + 2; i++) cout << "#";
+    cout << endl;
+    cout << "Score: " << score << endl;
 }
 
-void Input() {//функция для обработки нажатий клавиатуры
-    if (_kbhit()) {//проверяет нажатие кнопок
+void Input() {
+    if (_kbhit()) {
         switch (_getch()) {
         case 'a':
-            dir = LEFT;//влево
+            if (dir != RIGHT) dir = LEFT;
             break;
         case 'd':
-            dir = RIGHT;//вправо
+            if (dir != LEFT) dir = RIGHT;
             break;
         case 'w':
-            dir = UP;//вверх
+            if (dir != DOWN) dir = UP;
             break;
         case 's':
-            dir = DOWN;//вниз
+            if (dir != UP) dir = DOWN;
             break;
         case 'x':
-            gameOver = true;//значение x(нажатие x) завершает игру
+            gameOver = true;
             break;
         }
     }
 }
 
 void Logic() {
-    int prevX = snake[0].first;
-    int prevY = snake[0].second;//сохранение предыдущих координат змейки
-    int prev2X, prev2Y;//дополнительные переменные
-    snake[0].first = x;
-    snake[0].second = y;//обновление позиций головы змейки
-
-    for (size_t i = 1; i < snake.size(); i++) {
-        prev2X = snake[i].first;
-        prev2Y = snake[i].second;
-        snake[i].first = prevX;
-        snake[i].second = prevY;
-        prevX = prev2X;
-        prevY = prev2Y;
-    }//цикл обновляет каждую часть тела змейки, перемещая на одну позицию вперед
-
-    switch (dir) {//в зависимости от направления обновляются координаты головы змейки
+    vector<pair<int, int>> prev = snake;
+    switch (dir) {
     case LEFT:
         x--;
         break;
@@ -116,30 +103,44 @@ void Logic() {
         break;
     }
 
-    if (x >= width) x = 0; else if (x < 0) x = width - 1; //если голова уходит за стенку, она появляется с другой стороны
-    if (y >= height) y = 0; else if (y < 0) y = height - 1;
-
-    for (size_t i = 1; i < snake.size(); i++) {
-        if (snake[i].first == x && snake[i].second == y) {
-            gameOver = true;
-        }//если змейка врезается в свое тело - игра завершается
+    if (x >= width) x = 0;
+    else if (x < 0) x = width - 1;
+    if (y >= height) y = 0;
+    else if (y < 0) y = height - 1;
+    snake[0] = make_pair(x, y);
+    if (dir == RIGHT || dir == LEFT) {
+        snake[1] = make_pair(x, y + 1);
+    } else if (dir == UP || dir == DOWN) {
+        snake[1] = make_pair(x - 1, y);
     }
 
-    if (x == fruitX && y == fruitY) {
-        score += 1;
+    if ((x == fruitX && y == fruitY) ||
+        (snake[1].first == fruitX && snake[1].second == fruitY)) {
+        score++;
         fruitX = rand() % width;
         fruitY = rand() % height;
         snake.push_back(make_pair(-1, -1));
-    }//генерация фрукта и +1 к счетчику score, также если фрукт съеден появляется новый сегмент змейки
+        snake.push_back(make_pair(-1, -1));
+    }
+
+    for (size_t i = 2; i < snake.size(); i++) {
+        snake[i] = prev[i - 2];
+    }
+
+    for (size_t i = 2; i < snake.size(); i++) {
+        if ((snake[i] == snake[0] || snake[i] == snake[1]) && prev[i] != snake[0] && prev[i] != snake[1]) {
+            gameOver = true;
+        }
+    }
 }
 
-int main() {//начало основной программы
+int main() {
     Setup();
     while (!gameOver) {
         Draw();
         Input();
         Logic();
-        Sleep(100);//игра останавливается на 0.1 секунды
+        Sleep(100);
     }
     return 0;
 }
